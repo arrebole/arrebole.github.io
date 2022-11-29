@@ -6,4 +6,4 @@ title = "Arrebole's Blog"
   [markup.highlight]
     lineNumbersInTable = true
     noclasses = false
-    tabWidth = 4
+    tabWidth = 2
