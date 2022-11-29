@@ -1,0 +1,323 @@
+<!DOCTYPE html>
+<html lang="zh-cn">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="referrer" content="no-referrer">
+    <meta name="description" content="">
+
+    <title>
+      
+      
+         异构数据库解决方案 
+      
+    </title>
+
+    <link rel="canonical" href="https://arrebole.github.io/posts/%E5%BC%82%E6%9E%84%E6%95%B0%E6%8D%AE%E5%BA%93%E8%A7%A3%E5%86%B3%E6%96%B9%E6%A1%88/">
+
+  </head>
+
+  <body>
+    <section id=nav>
+      <h1><a href="/"></a></h1>
+      <ul>
+        
+      </ul>
+    </section>
+
+<section id=content>
+  <h1> 异构数据库解决方案 </h1>
+
+  
+    <div id=sub-header>
+      November 2022 · 3 minute read
+    </div>
+  
+
+  <div class="entry-content">
+    <h1 id="异构数据库同步方案---maxwell">异构数据库同步方案 - maxwell</h1>
+<p>基于binlog可以很方便的将数据从不同的数据库之间作增量同步, 与基于 Query 的查询同步方案相对比，基于 binlog 的同步方案对数据库造成压力非常的小，几乎可以忽略不计。</p>
+<h4 id="监听binlog的目前主流方案">监听binlog的目前主流方案</h4>
+<ul>
+<li>Maxwell</li>
+<li>Debezium</li>
+<li>Cannel</li>
+<li>FlinkCDC</li>
+</ul>
+<h4 id="信息队列中间件">信息队列中间件</h4>
+<ul>
+<li>Kafka</li>
+</ul>
+<h4 id="数据代理转换器agent">数据代理转换器(agent)</h4>
+<ul>
+<li>Logstash</li>
+<li>Filebeat</li>
+<li><strong>Fluentd</strong></li>
+</ul>
+<h4 id="下游数据库">下游数据库</h4>
+<ul>
+<li>elasticsearch</li>
+<li>redis</li>
+<li>…</li>
+</ul>
+<h2 id="异构数据库同步方案">异构数据库同步方案Ⅰ</h2>
+<p>基于  Maxwell、Kafka、Logstash、Elasticsearch 异构数据库同步方案,该方案的环境要求</p>
+<ul>
+<li>mysql5.5+</li>
+<li>kafka (0.8.2.2, 0.9.0.1, 0.10.0.1, 0.10.2.1, 0.11.0.1, 1.0.0+)</li>
+<li>logstash (版本与 elasticsearch  版本相关, 具体查看 <strong><strong><a href="https://www.elastic.co/cn/support/matrix#logstash_plugins">Elasticsearch相关组件版本对照表</a></strong></strong>)</li>
+<li>elasticsearch (版本与 logstash  版本相关, 具体查看 <strong><strong><a href="https://www.elastic.co/cn/support/matrix#logstash_plugins">Elasticsearch相关组件版本对照表</a></strong></strong>)</li>
+</ul>
+<p>部分 logstash 版本对照表</p>
+<table>
+<thead>
+<tr>
+<th>elasticsearch</th>
+<th>logstash</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>5.6.x</td>
+<td>2.4.x-6.0.x</td>
+</tr>
+<tr>
+<td>6.7.x</td>
+<td>5.6.x-6.8.x</td>
+</tr>
+<tr>
+<td>7.5.x</td>
+<td>6.8.x-7.17.x</td>
+</tr>
+<tr>
+<td>8.0.x</td>
+<td>7.17.x - 8.5.x</td>
+</tr>
+</tbody>
+</table>
+<p>logstash 支持的其他常用输入源 stdin、file、http、kafka、redis、tcp/udp， 常用输出源 stdout、csv、sink、mongodb、elasticsearch 、websocket、s3</p>
+<h3 id="数据库配置">数据库配置</h3>
+<blockquote>
+<p>本次使用 mysql5.5 作示范，其他版本的配置可能稍许不同需要</p>
+</blockquote>
+<p>首先需要开启 binlog，修改 mysql 配置文件  注意 maxwell 需要的 binlog 格式必须是 row</p>
+<pre tabindex="0"><code># /etc/mysql/my.cnf
+
+[mysqld]
+# maxwell 需要的 binlog 格式必须是 row
+binlog_format=row
+
+# 指定 server_id 此配置关系到主从同步需要按情况设置，
+# 由于此mysql没有开启主从同步，这边默认设置为 1
+server_id=1
+
+# logbin 输出的文件名， 按需配置
+log-bin=master
+</code></pre><p>重启 mysql 并查看配置是否生效</p>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-bash" data-lang="bash"><span style="display:flex;"><span><span style="color:#75715e"># 不同的 linux 发行版命令可能不同</span>
+</span></span><span style="display:flex;"><span>sudo systemctl restart mysqld
+</span></span></code></pre></div><div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-sql" data-lang="sql"><span style="display:flex;"><span><span style="color:#66d9ef">select</span> <span style="color:#f92672">@@</span>log_bin;
+</span></span><span style="display:flex;"><span><span style="color:#75715e">-- 1
+</span></span></span><span style="display:flex;"><span><span style="color:#75715e"></span>
+</span></span><span style="display:flex;"><span><span style="color:#66d9ef">select</span> <span style="color:#f92672">@@</span>binlog_format;
+</span></span><span style="display:flex;"><span><span style="color:#75715e">-- ROW
+</span></span></span></code></pre></div><p>如果要监听的数据库开启了主从同步，并且不是主数据库， 需要再从数据库开启 binlog 联级同步</p>
+<pre tabindex="0"><code># /etc/my.cnf
+
+log_slave_updates = 1
+</code></pre><h3 id="安装-maxwell">安装 Maxwell</h3>
+<blockquote>
+<p>本次使用 maxwell-1.39.2 作示范</p>
+</blockquote>
+<p>下载 maxwell 程序</p>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-bash" data-lang="bash"><span style="display:flex;"><span>wget https://github.com/zendesk/maxwell/releases/download/v1.39.2/maxwell-1.39.2.tar.gz
+</span></span><span style="display:flex;"><span>tar zxvf maxwell-1.39.2.tar.gz <span style="color:#f92672">&amp;&amp;</span>  cd maxwell-1.39.2
+</span></span></code></pre></div><h3 id="运行-maxwell">运行 Maxwell</h3>
+<blockquote>
+<p>确保机器中包含 java 环境， 推荐 openjdk11</p>
+</blockquote>
+<p>maxwell 使用了两个数据库，</p>
+<ul>
+<li>一个是需要被监听binlog的数据库(只需要读权限)</li>
+<li>另一个是记录maxwell服务状态的数据库，当前这两个数据库可以是同一个。</li>
+</ul>
+<p>重要参数说明</p>
+<ul>
+<li>host 需要监听binlog的数据库地址</li>
+<li>port 需要监听binlog的数据库端口</li>
+<li>user 需要监听binlog的数据库用户名</li>
+<li>password 需要监听binlog的密码</li>
+<li>replication_host 记录maxwell服务的数据库地址</li>
+<li>replication_port 记录maxwell服务的数据库端口</li>
+<li>replication_user 记录maxwell服务的数据库用户名</li>
+<li>filter 用于监听binlog数据时过滤不需要的数据库数据或指定需要的数据库</li>
+<li>producer 将监听到的增量变化数据提交给的消费者 (如 stdout、kafka)</li>
+<li>kafka.bootstrap.servers kafka服务地址</li>
+<li>kafka_version kafka版本</li>
+<li>kafka_topic 推送到kafka的主题</li>
+</ul>
+<p>创建需要被 maxwell 监控的表</p>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-sql" data-lang="sql"><span style="display:flex;"><span><span style="color:#66d9ef">CREATE</span> <span style="color:#66d9ef">TABLE</span> <span style="color:#f92672">`</span>example<span style="color:#f92672">`</span>.<span style="color:#f92672">`</span>users<span style="color:#f92672">`</span> (
+</span></span><span style="display:flex;"><span>  <span style="color:#f92672">`</span>id<span style="color:#f92672">`</span> int(<span style="color:#ae81ff">11</span>) <span style="color:#66d9ef">NOT</span> <span style="color:#66d9ef">NULL</span> AUTO_INCREMENT,
+</span></span><span style="display:flex;"><span>  <span style="color:#f92672">`</span>username<span style="color:#f92672">`</span> varchar(<span style="color:#ae81ff">255</span>) <span style="color:#66d9ef">COLLATE</span> utf8_bin <span style="color:#66d9ef">NOT</span> <span style="color:#66d9ef">NULL</span>,
+</span></span><span style="display:flex;"><span>  <span style="color:#f92672">`</span>password<span style="color:#f92672">`</span> varchar(<span style="color:#ae81ff">255</span>) <span style="color:#66d9ef">COLLATE</span> utf8_bin <span style="color:#66d9ef">NOT</span> <span style="color:#66d9ef">NULL</span>,
+</span></span><span style="display:flex;"><span>  <span style="color:#66d9ef">PRIMARY</span> <span style="color:#66d9ef">KEY</span> (<span style="color:#f92672">`</span>id<span style="color:#f92672">`</span>)
+</span></span><span style="display:flex;"><span>) ENGINE<span style="color:#f92672">=</span>InnoDB <span style="color:#66d9ef">DEFAULT</span> CHARSET<span style="color:#f92672">=</span>utf8mb4 <span style="color:#66d9ef">COLLATE</span><span style="color:#f92672">=</span>utf8mb4_unicode_ci;
+</span></span></code></pre></div><p>启动 maxwell</p>
+<p>注意，如果 kafka 配置了禁止自动创建主题，需要先自行在 kafka 上创建主题，kafka_version 需要更具情况指定</p>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-bash" data-lang="bash"><span style="display:flex;"><span>./bin/maxwell <span style="color:#ae81ff">\
+</span></span></span><span style="display:flex;"><span><span style="color:#ae81ff"></span>  --host<span style="color:#f92672">=</span><span style="color:#e6db74">&#39;mysql-maxwell&#39;</span> <span style="color:#ae81ff">\
+</span></span></span><span style="display:flex;"><span><span style="color:#ae81ff"></span>  --port<span style="color:#f92672">=</span><span style="color:#e6db74">&#39;3306&#39;</span> <span style="color:#ae81ff">\
+</span></span></span><span style="display:flex;"><span><span style="color:#ae81ff"></span>  --user<span style="color:#f92672">=</span><span style="color:#e6db74">&#39;root&#39;</span> <span style="color:#ae81ff">\
+</span></span></span><span style="display:flex;"><span><span style="color:#ae81ff"></span>  --password<span style="color:#f92672">=</span><span style="color:#e6db74">&#39;password&#39;</span> <span style="color:#ae81ff">\
+</span></span></span><span style="display:flex;"><span><span style="color:#ae81ff"></span>  --replication_host<span style="color:#f92672">=</span><span style="color:#e6db74">&#39;mysql&#39;</span> <span style="color:#ae81ff">\
+</span></span></span><span style="display:flex;"><span><span style="color:#ae81ff"></span>  --replication_port<span style="color:#f92672">=</span><span style="color:#e6db74">&#39;3306&#39;</span> <span style="color:#ae81ff">\
+</span></span></span><span style="display:flex;"><span><span style="color:#ae81ff"></span>  --replication_user<span style="color:#f92672">=</span><span style="color:#e6db74">&#39;maxwell&#39;</span> <span style="color:#ae81ff">\
+</span></span></span><span style="display:flex;"><span><span style="color:#ae81ff"></span>  --replication_password<span style="color:#f92672">=</span><span style="color:#e6db74">&#39;password&#39;</span> <span style="color:#ae81ff">\
+</span></span></span><span style="display:flex;"><span><span style="color:#ae81ff"></span>  --filter<span style="color:#f92672">=</span><span style="color:#e6db74">&#39;exclude: *.*, include: example.users&#39;</span> <span style="color:#ae81ff">\
+</span></span></span><span style="display:flex;"><span><span style="color:#ae81ff"></span>  --producer<span style="color:#f92672">=</span><span style="color:#e6db74">&#39;kafka&#39;</span> <span style="color:#ae81ff">\
+</span></span></span><span style="display:flex;"><span><span style="color:#ae81ff"></span>  --kafka.bootstrap.servers<span style="color:#f92672">=</span><span style="color:#e6db74">&#39;kafka:9092&#39;</span> <span style="color:#ae81ff">\
+</span></span></span><span style="display:flex;"><span><span style="color:#ae81ff"></span>  --kafka_version<span style="color:#f92672">=</span><span style="color:#e6db74">&#39;0.9.0.1&#39;</span> <span style="color:#ae81ff">\
+</span></span></span><span style="display:flex;"><span><span style="color:#ae81ff"></span>  --kafka_topic<span style="color:#f92672">=</span><span style="color:#e6db74">&#39;maxwell&#39;</span>
+</span></span></code></pre></div><h3 id="安装-logstash">安装 Logstash</h3>
+<p>logstash 包中已经包含了 openjdk 无需额外安装</p>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-bash" data-lang="bash"><span style="display:flex;"><span><span style="color:#75715e"># 下载与 elasticsearch 对于的版本</span>
+</span></span><span style="display:flex;"><span>wget https://artifacts.elastic.co/downloads/logstash/logstash-8.5.0-linux-x86_64.tar.gz
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span><span style="color:#75715e"># 解压</span>
+</span></span><span style="display:flex;"><span>tar zxvf logstash-8.5.0-linux-x86_64.tar.gz
+</span></span></code></pre></div><h3 id="运行-logstash-消费-kafka-推送到-elasticsearch">运行 logstash 消费 kafka 推送到 elasticsearch</h3>
+<p>本次使用的 elasticsearch 版本 7.17.7</p>
+<h4 id="删除不需要的配置文件">删除不需要的配置文件</h4>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-bash" data-lang="bash"><span style="display:flex;"><span>rm config/logstash.yml
+</span></span></code></pre></div><h4 id="修改-logstash-配置文件">修改 <code>logstash</code> 配置文件</h4>
+<pre tabindex="0"><code># config/logstash-sample.conf
+
+input {
+	kafka {
+        bootstrap_servers =&gt; &#34;10.0.6.88:9092&#34;
+        group_id =&gt; &#34;logstash&#34;
+        topics =&gt; [&#34;maxwell&#34;]
+	}
+}
+
+filter {
+   json {
+     source =&gt; &#34;message&#34;
+   }
+
+   # 将maxwell的事件类型转化为es的事件类型
+   # 如增加 -&gt; index 修改-&gt; update
+   translate {
+       source =&gt; &#34;[type]&#34;
+       target =&gt; &#34;[action]&#34;
+       dictionary =&gt; {
+       	  &#34;insert&#34; =&gt; &#34;index&#34;
+       	  &#34;bootstrap-insert&#34; =&gt; &#34;index&#34;
+       	  &#34;update&#34; =&gt; &#34;update&#34;
+       	  &#34;delete&#34; =&gt; &#34;delete&#34;
+       }
+       fallback =&gt; &#34;unknown&#34;
+   }
+
+   # 过滤无效的数据
+   if ([action] == &#34;unknown&#34;) {
+      drop {}
+   }
+
+   # 只提炼需要的字段
+   mutate {
+    add_field =&gt; {
+        &#34;id&#34; =&gt; &#34;%{[data][id]}&#34;
+		&#34;username&#34; =&gt; &#34;%{[data][username]}&#34;
+        &#34;password&#34; =&gt; &#34;%{[data][password]}&#34;
+	}
+
+    remove_field =&gt; [
+		&#34;message&#34;,
+		&#34;original&#34;,
+		&#34;@version&#34;,
+		&#34;@timestamp&#34;,
+		&#34;event&#34;,
+		&#34;database&#34;,
+		&#34;table&#34;,
+		&#34;type&#34;,
+		&#34;ts&#34;,
+		&#34;xid&#34;,
+		&#34;commit&#34;,
+		&#34;data&#34;,
+        &#34;type&#34;
+	]
+   }
+}
+
+output {
+  # 结果写到es
+  elasticsearch {
+        hosts =&gt; [&#34;http://10.0.6.88:9200&#34;]
+        index =&gt; &#34;logstash-mysql&#34;
+        action =&gt; &#34;%{action}&#34;
+        document_id =&gt; &#34;%{id}&#34;
+  }
+
+  # 结果打印到标准输出
+  stdout {
+    codec =&gt; rubydebug
+  }
+}
+</code></pre><p>执行程序</p>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-bash" data-lang="bash"><span style="display:flex;"><span><span style="color:#75715e"># 测试配置文件</span>
+</span></span><span style="display:flex;"><span>bin/logstash -f config/logstash-sample.conf --config.test_and_exit
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span><span style="color:#75715e"># 启动</span>
+</span></span><span style="display:flex;"><span>bin/logstash -f config/logstash-sample.conf --config.reload.automatic
+</span></span></code></pre></div><h3 id="测试结果">测试结果</h3>
+<p>数据库中插入数据</p>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-bash" data-lang="bash"><span style="display:flex;"><span><span style="color:#75715e"># 数据库中插入数据</span>
+</span></span><span style="display:flex;"><span>insert into example.users set username <span style="color:#f92672">=</span> <span style="color:#e6db74">&#39;root&#39;</span>, password <span style="color:#f92672">=</span> <span style="color:#e6db74">&#39;password&#39;</span>;
+</span></span></code></pre></div><p>通过 kafka-console-consumer 查看 kafka 中 maxwell 主题内的数据，发现生成了一条插入事件的数据</p>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-bash" data-lang="bash"><span style="display:flex;"><span>./bin/kafka-console-consumer.sh <span style="color:#ae81ff">\
+</span></span></span><span style="display:flex;"><span><span style="color:#ae81ff"></span>	--topic maxwell <span style="color:#ae81ff">\
+</span></span></span><span style="display:flex;"><span><span style="color:#ae81ff"></span>	--group console <span style="color:#ae81ff">\
+</span></span></span><span style="display:flex;"><span><span style="color:#ae81ff"></span>	--bootstrap-server 127.0.0.1:9092
+</span></span></code></pre></div><div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-json" data-lang="json"><span style="display:flex;"><span>{
+</span></span><span style="display:flex;"><span>	<span style="color:#f92672">&#34;database&#34;</span>:<span style="color:#e6db74">&#34;example&#34;</span>,
+</span></span><span style="display:flex;"><span>	<span style="color:#f92672">&#34;table&#34;</span>:<span style="color:#e6db74">&#34;users&#34;</span>,
+</span></span><span style="display:flex;"><span>	<span style="color:#f92672">&#34;type&#34;</span>:<span style="color:#e6db74">&#34;insert&#34;</span>,
+</span></span><span style="display:flex;"><span>	<span style="color:#f92672">&#34;ts&#34;</span>:<span style="color:#ae81ff">1668483329</span>,
+</span></span><span style="display:flex;"><span>	<span style="color:#f92672">&#34;xid&#34;</span>:<span style="color:#ae81ff">1914</span>,
+</span></span><span style="display:flex;"><span>	<span style="color:#f92672">&#34;commit&#34;</span>:<span style="color:#66d9ef">true</span>,
+</span></span><span style="display:flex;"><span>	<span style="color:#f92672">&#34;data&#34;</span>: {
+</span></span><span style="display:flex;"><span>		<span style="color:#f92672">&#34;id&#34;</span>: <span style="color:#ae81ff">2</span>,
+</span></span><span style="display:flex;"><span>		<span style="color:#f92672">&#34;username&#34;</span>:<span style="color:#e6db74">&#34;root&#34;</span>,
+</span></span><span style="display:flex;"><span>		<span style="color:#f92672">&#34;password&#34;</span>:<span style="color:#e6db74">&#34;password&#34;</span>
+</span></span><span style="display:flex;"><span>	}
+</span></span><span style="display:flex;"><span>}
+</span></span></code></pre></div><p>在 elasticsearch 中查看数据变化，成功导入了数据。</p>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-bash" data-lang="bash"><span style="display:flex;"><span><span style="color:#75715e"># elasticsearch 中查看增加的数据</span>
+</span></span><span style="display:flex;"><span><span style="color:#f92672">{</span>
+</span></span><span style="display:flex;"><span>	<span style="color:#e6db74">&#34;_index&#34;</span>: <span style="color:#e6db74">&#34;logstash-mysql&#34;</span>,
+</span></span><span style="display:flex;"><span>	<span style="color:#e6db74">&#34;_type&#34;</span>: <span style="color:#e6db74">&#34;_doc&#34;</span>,
+</span></span><span style="display:flex;"><span>	<span style="color:#e6db74">&#34;_id&#34;</span>: <span style="color:#e6db74">&#34;0DBEeoQBsUlSTyXKM9A8&#34;</span>,
+</span></span><span style="display:flex;"><span>	<span style="color:#e6db74">&#34;_version&#34;</span>: 1,
+</span></span><span style="display:flex;"><span>	<span style="color:#e6db74">&#34;_score&#34;</span>: 1,
+</span></span><span style="display:flex;"><span>	<span style="color:#e6db74">&#34;_source&#34;</span>: <span style="color:#f92672">{</span>
+</span></span><span style="display:flex;"><span>		<span style="color:#e6db74">&#34;password&#34;</span>: <span style="color:#e6db74">&#34;password&#34;</span>,
+</span></span><span style="display:flex;"><span>		<span style="color:#e6db74">&#34;username&#34;</span>: <span style="color:#e6db74">&#34;root&#34;</span>,
+</span></span><span style="display:flex;"><span>		<span style="color:#e6db74">&#34;id&#34;</span>: <span style="color:#ae81ff">9</span>
+</span></span><span style="display:flex;"><span>	<span style="color:#f92672">}</span>
+</span></span><span style="display:flex;"><span><span style="color:#f92672">}</span>
+</span></span></code></pre></div>
+  </div>
+
+  <div id=links>
+    
+    
+  </div>
+</section>
+
+</body>
+</html>
+
+
+

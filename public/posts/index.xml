@@ -1,0 +1,24 @@
+<?xml version="1.0" encoding="utf-8" standalone="yes"?>
+<rss version="2.0" xmlns:atom="http://www.w3.org/2005/Atom">
+  <channel>
+    <title>Posts on Arrebole&#39;s Blog</title>
+    <link>https://arrebole.github.io/posts/</link>
+    <description>Recent content in Posts on Arrebole&#39;s Blog</description>
+    <generator>Hugo -- gohugo.io</generator>
+    <language>zh-cn</language>
+    <lastBuildDate>Tue, 29 Nov 2022 16:45:18 +0800</lastBuildDate><atom:link href="https://arrebole.github.io/posts/index.xml" rel="self" type="application/rss+xml" />
+    <item>
+      <title>异构数据库解决方案</title>
+      <link>https://arrebole.github.io/posts/%E5%BC%82%E6%9E%84%E6%95%B0%E6%8D%AE%E5%BA%93%E8%A7%A3%E5%86%B3%E6%96%B9%E6%A1%88/</link>
+      <pubDate>Tue, 29 Nov 2022 16:45:18 +0800</pubDate>
+      
+      <guid>https://arrebole.github.io/posts/%E5%BC%82%E6%9E%84%E6%95%B0%E6%8D%AE%E5%BA%93%E8%A7%A3%E5%86%B3%E6%96%B9%E6%A1%88/</guid>
+      <description>异构数据库同步方案 - maxwell 基于binlog可以很方便的将数据从不同的数据库之间作增量同步, 与基于 Query 的查询同步方案相对比，基于 binlog 的同步方案对数据库造成压力非常的小，几乎可以忽略不计。
+监听binlog的目前主流方案 Maxwell Debezium Cannel FlinkCDC 信息队列中间件 Kafka 数据代理转换器(agent) Logstash Filebeat Fluentd 下游数据库 elasticsearch redis … 异构数据库同步方案Ⅰ 基于 Maxwell、Kafka、Logstash、Elasticsearch 异构数据库同步方案,该方案的环境要求
+mysql5.5+ kafka (0.8.2.2, 0.9.0.1, 0.10.0.1, 0.10.2.1, 0.11.0.1, 1.0.0+) logstash (版本与 elasticsearch 版本相关, 具体查看 Elasticsearch相关组件版本对照表) elasticsearch (版本与 logstash 版本相关, 具体查看 Elasticsearch相关组件版本对照表) 部分 logstash 版本对照表
+elasticsearch logstash 5.6.x 2.4.x-6.0.x 6.7.x 5.6.x-6.8.x 7.5.x 6.8.x-7.17.x 8.0.x 7.17.x - 8.5.x logstash 支持的其他常用输入源 stdin、file、http、kafka、redis、tcp/udp， 常用输出源 stdout、csv、sink、mongodb、elasticsearch 、websocket、s3
+数据库配置 本次使用 mysql5.</description>
+    </item>
+    
+  </channel>
+</rss>
