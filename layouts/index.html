@@ -1,21 +1,41 @@
-{{ partial "header.html" . }}
+<!DOCTYPE html>
+<html lang="en">
 
-<section id=content>
-  <ul class=posts_listing>
-    {{ range .Site.RegularPages }}
-      <li>
-        <h2>
-          <a href="{{ .Permalink }}">{{ .Title }}</a>
-          <span class=date>
-            {{if not .Date.IsZero }}
+{{ partial "head.html" . }}
+
+<body>
+
+  <header class="blog-center blog-p2">
+    <h2> Arrebole's Blog </h2>
+
+    <div class="blog-p1">
+      <p>道可道非常道，名可名非常名。</p>
+    </div>
+  </header>
+
+  <article class="blog-center blog-p2">
+
+    <section >
+      <ul>
+        {{ range .Site.RegularPages }}
+        <li>
+          <h4>
+            <a href="{{ .Permalink }}">{{ .Title }}</a>
+            <span class="date">
+              {{ if not .Date.IsZero }}
               {{ .Date.Format (.Site.Params.dateform | default "2006-01-02") }}
-            {{end}}
-          </span>
-        </h2>
-      </li>
-    {{ end }}
-  </ul>
-</section>
+              {{ end }}
+            </span>
+          </h4>
+        </li>
+        {{ end }}
+      </ul>
+    </section>
 
-{{ partial "footer.html" . }}
+  </article>
 
+
+
+</body>
+
+</html>

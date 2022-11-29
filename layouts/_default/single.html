@@ -1,28 +1,28 @@
-{{ partial "header.html" . }}
+<!DOCTYPE html>
+<html lang="en">
 
-<section id=content>
-  <h1>{{ if .Params.heading }} {{ .Params.heading }} {{ else }} {{ .Title }} {{ end }}</h1>
+  {{ partial "head.html" . }}
 
-  {{ if .Params.date }}
-    <div id=sub-header>
-      {{ .Date.Format (.Site.Params.dateform | default "January 2006") }} · {{ .ReadingTime }} minute read
+<body>
+
+  <article class="markdown-body">
+    <h1>{{ if .Params.heading }} {{ .Params.heading }} {{ else }} {{ .Title }} {{ end }}</h1>
+  
+    {{ if .Params.date }}
+      <div>
+        {{ .Date.Format (.Site.Params.dateform | default "January 2006") }} · {{ .ReadingTime }} minute read
+      </div>
+    {{ end }}
+  
+    <div>
+      {{ .Content }}
     </div>
-  {{ end }}
+  </article>
 
-  <div class="entry-content">
-    {{ .Content }}
-  </div>
+</body>
 
-  <div id=links>
-    {{ if .PrevInSection }}
-      <a href="{{.PrevInSection.Permalink}}">&laquo;&nbsp;{{.PrevInSection.Title}}</a>
-    {{ end }}
-    {{ if .NextInSection }}
-      <a href="{{.NextInSection.Permalink}}">{{.NextInSection.Title}}&nbsp;&raquo;</a>
-    {{ end }}
-  </div>
-</section>
+</html>
 
-{{ partial "footer.html" . }}
+
 
 

@@ -2,9 +2,8 @@ baseURL = 'https://arrebole.github.io'
 languageCode = 'zh-cn'
 title = "Arrebole's Blog"
 
-[outputs]
-home = ["HTML", "RSS"]
-
-[taxonomies]
-    tag = "tags"
-    category = "categories"
+[markup]
+  [markup.highlight]
+    lineNumbersInTable = true
+    noclasses = false
+    tabWidth = 4
