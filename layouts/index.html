@@ -8,30 +8,44 @@
   <header class="blog-center blog-p2">
     <h2> Arrebole's Blog </h2>
 
-    <div class="blog-p1">
+    <div class="blog-p-1">
       <p>道可道非常道，名可名非常名。</p>
     </div>
+
   </header>
 
   <article class="blog-center blog-p2">
+    {{ range $category := $.Site.Params.categories }}
+    <section class="blog-m-2">
+      <div>
+        <h4> {{ $category }} </h4>
+      </div>
 
-    <section >
-      <ul>
-        {{ range .Site.RegularPages }}
-        <li>
-          <h4>
-            <a href="{{ .Permalink }}">{{ .Title }}</a>
-            <span class="date">
-              {{ if not .Date.IsZero }}
-              {{ .Date.Format (.Site.Params.dateform | default "2006-01-02") }}
-              {{ end }}
-            </span>
-          </h4>
-        </li>
-        {{ end }}
-      </ul>
+      <div>
+        <ul>
+          {{ range $.Site.RegularPages }}
+          {{ if in .Params.categories (string $category) }}
+          <li>
+            <h4>
+              <a href="{{ .Permalink }}">{{ .Title }}</a>
+              <span>
+                {{  range .Params.tags  }}
+                <span>【{{ . }}】</span>
+                {{ end }}
+              </span>
+              <span class="date">
+                {{ if not .Date.IsZero }}
+                {{ .Date.Format ("2006-01-02") }}
+                {{ end }}
+              </span>
+            </h4>
+          </li>
+          {{ end }}
+          {{ end }}
+        </ul>
+      </div>
     </section>
-
+    {{ end }}
   </article>
 
 
