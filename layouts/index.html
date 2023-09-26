@@ -18,24 +18,19 @@
     {{ range $category := $.Site.Params.categories }}
     <section class="blog-m-2">
       <div>
-        <h4> {{ $category }} </h4>
+        <h4>{{ $category }} </h4>
       </div>
 
-      <div>
+      <div class="pl-5">
         <ul>
           {{ range $.Site.RegularPages }}
           {{ if in .Params.categories (string $category) }}
           <li>
             <h4>
               <a href="{{ .Permalink }}">{{ .Title }}</a>
-              <span>
-                {{  range .Params.tags  }}
-                <span>【{{ . }}】</span>
-                {{ end }}
-              </span>
               <span class="date">
                 {{ if not .Date.IsZero }}
-                {{ .Date.Format ("2006-01-02") }}
+                ({{ .Date.Format ("2006-01-02") }})
                 {{ end }}
               </span>
             </h4>
@@ -47,9 +42,6 @@
     </section>
     {{ end }}
   </article>
-
-
-
 </body>
 
 </html>
