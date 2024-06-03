@@ -3,7 +3,7 @@ languageCode = 'zh-cn'
 title = "Arrebole's Blog"
 
 [params]
-  categories = ["修行", "编程", "美食", "市场"] 
+  categories = ["修行", "编程", "市场"]
 
 [markup]
   [markup.highlight]
