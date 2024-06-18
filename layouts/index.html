@@ -9,7 +9,7 @@
     <h2> Arrebole's Blog </h2>
 
     <div class="blog-p-1">
-      <p>道可道非常道，名可名非常名。</p>
+      <p>道可道非恒道，名可名非恒名。</p>
     </div>
 
   </header>
@@ -27,7 +27,7 @@
           {{ if in .Params.categories (string $category) }}
           <li>
             <h4>
-              <a href="{{ .Permalink }}">{{ .Title }}</a>
+              <a href="{{ .Permalink }}" target="_blank">{{ .Section }}/{{ .Title }}</a>
               <span class="date">
                 {{ if not .Date.IsZero }}
                 ({{ .Date.Format ("2006-01-02") }})

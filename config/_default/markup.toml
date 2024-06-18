@@ -1,0 +1,4 @@
+[markup.highlight]
+  lineNumbersInTable = true
+  noclasses = false
+  tabWidth = 2

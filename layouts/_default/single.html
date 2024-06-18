@@ -10,7 +10,7 @@
   
     {{ if .Params.date }}
       <div>
-        {{ .Date.Format (.Site.Params.dateform | default "January 2006") }} · {{ .ReadingTime }} minute read
+        {{ .Date.Format (.Site.Params.dateform | default "2006-01-02 15:04:05") }} · {{ .ReadingTime }} minute read
       </div>
     {{ end }}
   
