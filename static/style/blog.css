@@ -4,7 +4,7 @@
   min-width: 200px;
   max-width: 980px;
   margin: 0 auto;
-  padding: 45px;
+  padding: 40px;
 }
 
 .blog-center {
@@ -27,8 +27,10 @@
 }
 
 .giscus {
-  width: 90%;
+  min-width: 200px;
+  max-width: 950px;
   margin: 0 auto;
+  padding: 15px;
 }
 
 @media (max-width: 767px) {

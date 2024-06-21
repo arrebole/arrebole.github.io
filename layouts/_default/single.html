@@ -3,6 +3,8 @@
 
   {{ partial "head.html" . }}
 
+  <script async src="//busuanzi.ibruce.info/busuanzi/2.3/busuanzi.pure.mini.js"></script>
+
 <body>
 
   <article class="markdown-body">
@@ -10,7 +12,20 @@
   
     {{ if .Params.date }}
       <div>
-        {{ .Date.Format (.Site.Params.dateform | default "2006-01-02 15:04:05") }} · {{ .ReadingTime }} minute read
+        <div>
+          <span>
+            {{ .Date.Format (.Site.Params.dateform | default "2006-01-02 15:04:05") }} · {{ .ReadingTime }} minute read
+          </span>
+        </div>
+        <div>
+          <span id="busuanzi_container_site_pv">
+            pv (<span id="busuanzi_value_site_pv"></span>)
+          </span>
+          /
+          <span id="busuanzi_container_site_pv">
+            uv (<span id="busuanzi_value_site_uv"></span>)
+          </span>
+        </div>
       </div>
     {{ end }}
   
@@ -18,6 +33,7 @@
       {{ .Content }}
     </div>
   </article>
+
   {{ if .Site.Params.page.comment.giscus.enable }}
     <script src="https://giscus.app/client.js"
       data-repo={{ .Site.Params.page.comment.giscus.repo }}
