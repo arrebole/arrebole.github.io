@@ -13,17 +13,28 @@
     {{ if .Params.date }}
       <div>
         <div>
+          <svg xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" width="68" height="20" role="img" aria-label="pv">
+            <title>pv</title>
+            <linearGradient id="s" x2="0" y2="100%"><stop offset="0" stop-color="#bbb" stop-opacity=".1"/>
+                <stop offset="1" stop-opacity=".1"/>
+            </linearGradient>
+            <clipPath id="r">
+                <rect width="68" height="20" rx="3" fill="#fff"/>
+            </clipPath>
+            <g clip-path="url(#r)">
+                <rect width="23" height="20" fill="#555"/><rect x="23" width="45" height="20" fill="#007ec6"/>
+                <rect width="68" height="20" fill="url(#s)"/>
+            </g>
+            <g fill="#fff" text-anchor="middle" font-family="Verdana,Geneva,DejaVu Sans,sans-serif" text-rendering="geometricPrecision" font-size="110">
+                <text x="125" y="140" transform="scale(.1)" fill="#fff" textLength="130">pv</text>
+                <text x="445" y="140" transform="scale(.1)" fill="#fff" textLength="350" id="busuanzi_value_site_pv"></text>
+            </g>
+          </svg>       
+        </div>
+
+        <div>
           <span>
             {{ .Date.Format (.Site.Params.dateform | default "2006-01-02 15:04:05") }} · {{ .ReadingTime }} minute read
-          </span>
-        </div>
-        <div>
-          <span id="busuanzi_container_site_pv">
-            pv (<span id="busuanzi_value_site_pv"></span>)
-          </span>
-          /
-          <span id="busuanzi_container_site_pv">
-            uv (<span id="busuanzi_value_site_uv"></span>)
           </span>
         </div>
       </div>
