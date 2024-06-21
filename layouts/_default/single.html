@@ -18,7 +18,24 @@
       {{ .Content }}
     </div>
   </article>
-
+  {{ if .Site.Params.page.comment.giscus.enable }}
+    <script src="https://giscus.app/client.js"
+      data-repo={{ .Site.Params.page.comment.giscus.repo }}
+      data-repo-id={{ .Site.Params.page.comment.giscus.repoId }}
+      data-category={{ .Site.Params.page.comment.giscus.category }}
+      data-category-id={{ .Site.Params.page.comment.giscus.categoryId }}
+      data-lang={{ .Site.Params.page.comment.giscus.lang }}
+      data-mapping="pathname"
+      data-strict="0"
+      data-reactions-enabled="0"
+      data-emit-metadata="0"
+      data-input-position="bottom"
+      data-theme="light"
+      crossorigin="anonymous"
+      async
+    >
+    </script>
+  {{ end }}
 </body>
 
 </html>

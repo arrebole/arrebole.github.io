@@ -1,1 +1,10 @@
 categories = ["修行"]
+
+[page.comment.giscus]
+  # 你可以参考官方文档来使用下列配置
+  enable = true
+  repo = "arrebole/arrebole.github.io"
+  repoId = "MDEwOlJlcG9zaXRvcnkzNjQ2MTU2NDQ="
+  category = "Announcements"
+  categoryId = "DIC_kwDOFbuX3M4CgPTT"
+  lang = "zh-CN"
