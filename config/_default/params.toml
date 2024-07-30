@@ -1,7 +1,6 @@
-categories = ["修行"]
+categories = ["悟"]
 
 [page.comment.giscus]
-  # 你可以参考官方文档来使用下列配置
   enable = true
   repo = "arrebole/arrebole.github.io"
   repoId = "MDEwOlJlcG9zaXRvcnkzNjQ2MTU2NDQ="

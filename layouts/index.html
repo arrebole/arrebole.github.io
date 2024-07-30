@@ -24,7 +24,7 @@
         <div class="pl-5">
           <ul>
             {{ range $page := $.Site.RegularPages }}
-            {{ if and (in $page.Params.categories (string $category)) (eq (string $page.Section) (string $section.Section)) }}
+            {{ if and (in $section.Params.categories (string $category)) (eq (string $page.Section) (string $section.Section)) }}
             <li>
               <h4>
                 <a href="{{ .Permalink }}" target="_blank">{{ $section.Section }}/{{ $page.Title }}</a>
