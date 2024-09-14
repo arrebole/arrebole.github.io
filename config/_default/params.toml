@@ -1,4 +1,4 @@
-categories = ["悟"]
+categories = ["悟", "计算机", "金融"]
 
 [page.comment.giscus]
   enable = true

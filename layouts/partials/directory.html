@@ -1,0 +1,32 @@
+{{ range $category := $.Site.Params.categories }}
+
+<section class="blog-m-2">
+    <h3>{{ $category }} </h3>
+    {{ range $section := $.Site.Sections }}
+    <ul>
+        {{ if in $section.Params.categories (string $category) }}
+        <li class="ml-2">
+            <span class="f-18"> {{ $section.Section }} </span>
+            <ul>
+              {{ range $page := $.Site.RegularPages }}
+              {{ if eq (string $page.Section) (string $section.Section) }}
+              <li>
+                <h4 class="f-14">
+                  <a href="{{ .Permalink }}" target="_blank">{{ $page.Title }}</a>
+                  <span class="date">
+                    {{ if not $page.Date.IsZero }}
+                    ({{ $page.Date.Format ("2006/01/02") }})
+                    {{ end }}
+                  </span>
+                </h4>
+              </li>
+              {{ end }}
+              {{ end }}
+            </ul>
+        </li>
+        {{ end }}
+    </ul>
+    {{ end }}
+  </div>
+</section>
+{{ end }}
